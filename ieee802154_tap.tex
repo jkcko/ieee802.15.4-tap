@@ -1,0 +1,510 @@
+\documentclass[12pt]{article}
+\newcommand\maintitle{
+IEEE 802.15.4 TAP Link Type Specification
+}
+\newcommand\authorname{James Ko}
+\newcommand\company[1][]{\textit{Exegin Technologies Limited}~}
+\newcommand\versionnumber{1}
+\title{
+\maintitle
+\\\company
+\\\hfill\\\normalsize Version \versionnumber
+}
+\author{\authorname~\tt{<jck@exegin.com>}}
+
+% We use literal underscores a lot -- disable it as the subscript indicator.
+\catcode`\_=\active
+
+% Comment out the line below when out of draft
+\usepackage{draftwatermark}\SetWatermarkScale{3}
+%\SetWatermarkText{Confidential}
+
+\usepackage[none]{hyphenat}
+\usepackage[margin=2cm]{geometry}
+\usepackage{calc}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{verbatim}
+\usepackage{fancyvrb}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{wrapfig}
+
+%
+% Bytefield and color customizations
+%
+\usepackage{bytefield}
+\usepackage{color}
+
+\definecolor{lightgray}{gray}{0.9}
+\newcommand{\colorbitbox}[3]{%
+    \rlap{\bitbox{#2}{\color{#1}\rule{\width}{\height}}}%
+    \bitbox{#2}{#3}}
+
+\pagestyle{fancy}
+\fancyhead{}
+\setlength{\headheight}{0pt}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand\_{\textunderscore\allowbreak}
+\rfoot{}
+
+\hypersetup{
+  pdftitle=\maintitle,
+  pdfauthor=\authorname,
+  colorlinks=true,
+  linkcolor=black,
+  bookmarksnumbered=true
+}
+
+\usepackage{indentfirst}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1.5ex}
+\setlength{\footskip}{1cm}
+
+\titleformat*{\subsubsection}{\Large\bfseries}
+
+% Set the source-code listing style.
+\lstset{
+  basicstyle=\tt,
+  showspaces=false,
+  showstringspaces=false,
+  numbers=left,
+  frame=single,
+  captionpos=b,
+  breaklines=true,
+  aboveskip=\baselineskip,
+  belowskip=\baselineskip,
+  framextopmargin=0pt,
+  framexbottommargin=0pt,
+  escapeinside={/@}{@/}
+}
+
+% Some useful formatting tags
+% \texttt{terminal text}
+% \textbf{bold}
+% \texttt{\nameref{sec:<name>}}
+
+\begin{document}
+\begin{titlepage}
+    \vspace{5cm}
+    \begin{wrapfigure}{R}{0.25\textwidth}
+        \includegraphics[scale=1]{exegin.png}
+    \end{wrapfigure}
+    \vspace{2cm}
+    {\scshape\LARGE Exegin Technologies Limited \par}
+    \vspace{5cm}
+    {\scshape\Large IEEE 802.15.4 Information Link Type Specification\par}
+    {\itshape Version \versionnumber}
+    \vspace{2cm}
+    \vfill
+
+    \vfill
+
+\begin{tabular}{ |p{3cm}|p{12cm}| }
+\hline
+\textbf{Revision}   &  \textbf{Description}\\
+\hline
+    2019-01-29 & Version 1 - Initial Release\\
+\hline
+\end{tabular}
+
+    % Bottom of the page
+    {\large \today\par}
+\end{titlepage}
+
+% Contents
+\newpage
+%\maketitle
+\tableofcontents
+
+\newpage
+\section{Introduction}\label{sec:intro}
+IEEE 802.15.4 is a wireless standard for Low-Rate Wireless Personal Area
+Networks (LR-WPANs) defining a number of physical (PHY) layers covering a wide
+variety of freqency bands and a number of Media Access Control (MAC) sub-layers
+for managing data and management services including beacon management, channel
+access, frame delivery and validation, and security mechanisms.  Developing,
+debugging, diagnosing, and maintaining technologies using IEEE 802.15.4
+require capturing packets with a sniffer. Sniffers generally output captured packets
+encapsulated in a pcap or pcap-ng packet with a specific data link-type (DLT)
+[\ref{itm:linktypes}] that is understood by packet analyzers.
+
+Three existing DLTs for IEEE 802.15.4 are defined
+
+\begin{itemize}
+    \item DLT_IEEE802_15_4_WITHFCS (195),
+    \item DLT_IEEE802_15_4_NONASK_PHY (215), and
+    \item DLT_IEEE802_15_4_NOFCS (230).
+\end{itemize}
+
+None of the current DLTs provide a means to include out-of-band
+meta-data such as received signal strength and channel number which are useful
+for diagnostics in any wireless transmission system.  Also, the current
+implementation with FCS only supports a 16-bit ITU-T CRC or CRC OK bit in the
+status bytes provided by TI CC24xx radios, and the FCS type must be selected
+by the user in the global protocol capture preferences.  The IEEE
+802.15.4-2015 standard also specifies a 32-bit CRC equivalent to ANSI
+X3.66-1979 for SUN PHYs or TVWS PHYs.  The global protocol configuration does
+not support configurations with multiple sniffer interfaces each with a
+different FCS type, 
+
+This document proposes and defines a new DLT and format for presenting captured
+IEEE 802.15.4 packets with meta-data to packet analyzers.
+
+\newpage
+\section{Overview}\label{sec:ovrvw}
+The IEEE 802.15.4 TAP DLT design is based on an extensible Type-Length-Value
+(TLV) format.  The optional meta-data information in encapsulated in one or
+more TLVs and included in any packet from a sniffer.  Some types may be
+duplicated by pcap-ng options but using the TLVs in this DLT enables providing
+the meta-data information in both pcap and pcap-ng capture streams.  Where
+types are duplicated by TLVs and pcap-ng options in the same packet,
+the DLT TLVs have priority.
+
+\subsection{PCAPNG Block Types}
+Although DLTs are common to pcap and pcap-ng, this document will provide
+examples using pcap-ng only.
+
+\subsubsection{PCAPNG IDB}
+
+The DLT value is specified in the pcap header or pcap-ng interface description
+block (IDB) before the the first packet.
+
+\begin{Verbatim}[samepage=true]
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                Block Type = 0x00000001                        |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                   Block Total Length                          |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |  DLT_IEEE802_15_4_TAP (283)   |        reserved               |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                          SnapLen                              |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                      Options (variable)                       |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                      Block Total Length                       |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
+\newpage
+\subsubsection{PCAPNG EPB}
+
+An IEEE 802.15.4 TAP packet is encapsulated in the packet data following a
+pcap record header or in the packet data of a pcap-ng Enhanced Packet Block
+(EPB).
+
+\begin{Verbatim}[samepage=true]
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                   Block Type = 0x00000006                     |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                      Block Total Length                       |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                         Interface_ID                          |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                      Timestamp (High)                         |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                       Timestamp (Low)                         |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                    Captured Packet Length                     |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                    Original Packet Length                     |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                    IEEE 802.15.4 TAP Packet                   |
+  |                variable length, padded to 32 bits             |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                       Options (variable)                      |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                      Block Total Length                       |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
+\newpage
+\subsection{IEEE 802.15.4 TAP Packet}
+
+The IEEE 802.15.4 TAP Packet consists of the TAP Header, zero or more TLV
+fields, the PHY payload (PSDU), and optional FCS bytes.  All data fields are
+encoded in little-endian byte order.
+
+\subsubsection{IEEE 802.15.4 TAP Header}
+
+\begin{Verbatim}[samepage=true]
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |    version    |    padding    |            length             |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                            TAP TLVs                           :
+  :                        variable length                        |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                              ...                              :
+  :                   IEEE 802.15.4 PHY Payload                   :
+  :                    [+ FCS per FCS Type TLV]                   :
+  :                              ...                              |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
+\begin{itemize}
+    \item version - 0
+    \item padding
+    \item length - total length of header and TLVs in bytes
+\end{itemize}
+
+\subsubsection{IEEE 802.15.4 TAP TLVs}
+
+IEEE 802.15.4 TAP TLVs have the following format.
+
+\begin{Verbatim}[samepage=true]
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |             type              |             length            |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                             value                             :
+  :                variable length, padded to 32 bits             |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
+\begin{itemize}
+    \item type        - field type identifier
+    \item length      - bytes in value field
+    \item value       - data for type
+\end{itemize}
+
+\newpage
+\section{IEEE 802.15.4 TAP TLV Types}
+
+The following subsections describe the currently defined TLVs.  Any unknown
+TLVs should be dissected as a binary blob of the provided length.
+
+\subsection{FCS Type}
+
+Identifies the FCS type following the PHY Payload.  FCS type none (0) is
+optional if no FCS is present.
+
+\begin{Verbatim}[samepage=true]
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |      Type = FCS_TYPE (0)      |           datalen = 1         |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |     Type      |             padding                           |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
+The FCS type is one of
+    \begin{itemize}
+        \item 0 = None,
+        \item 1 = 16-bit CRC,
+        \item 2 = 32-bit CRC,
+        \item 3 = TI CC24xx CRC_OK bit.
+    \end{itemize}
+
+\subsection{Receive Signal Strength}
+The received signal strength in dBm as a IEEE-754 floating point number.
+
+\begin{Verbatim}[samepage=true]
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |         Type = RSS (1)        |           datalen = 4         |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                          RSS in dBm                           |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
+\newpage
+\subsection{Bit Rate}
+
+The transmission data-rate in bps.  The bit-rate may change frame to frame in
+multi-rate PHY configurations.
+
+\begin{Verbatim}[samepage=true]
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |      Type = BIT_RATE (2)      |           datalen = 4         |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                        Bit rate in bps                        |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
+\subsection{Channel Assignment}
+
+Channel assignments are defined through a combination of channel numbers and
+channel pages.  See IEEE 802.15.4-2015 10.1.2 Channel assignments.
+\begin{Verbatim}[samepage=true]
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  | Type = CHANNEL_ASSIGNMENT (3) |           datalen = 3         |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |        Channel number         | Channel page  |    padding    |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
+\subsection{SUN PHY Information}
+
+An IEEE 802.15.4 SUN PHY is configured to operate in a specified frequency
+band, encoding type, and rate mode.
+
+\begin{Verbatim}[samepage=true]
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |   Type = PHY_ENCODING (4)     |         datalen = 3           |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |     Band      |     Type      |     Mode      |   padding     |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
+\begin{itemize}
+    \item Band - IEEE 802.15.4 Table 7-19 Frequency band identifer values.
+    \item Type - IEEE 802.15.4 Table 7-20 Modulation scheme encoding values.
+    \item Mode - IEEE 802.15.4 Rate mode depends on the Band and Type.
+\end{itemize}
+
+\newpage
+\subsection{Start of Frame Timestamp}
+
+The start of frame timestamp is a monotonically increasing time in nanoseconds
+since power on of the receiving device.  This value differs from the timestamp
+in the pcap or pcap-ng header which is based on the clock time reported by the
+sniffer.
+
+\begin{Verbatim}[samepage=true]
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |   Type = SOF_TIMESTAMP (5)    |          datalen = 8          |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                                                               |
+  |                          nanoseconds                          |
+  |                                                               |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
+\subsection{End of Frame Timestamp}
+
+The end of frame timestamp is a monotonically increasing time in nanoseconds
+since power on of the receiving device.  This value is important to
+time-slotted MACs where a packet may overflow a time slot, or where there are
+timing constraints on the ack sent in response to a data frame.
+
+\begin{Verbatim}[samepage=true]
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |   Type = EOF_TIMESTAMP (6)    |          datalen = 8          |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                                                               |
+  |                          nanoseconds                          |
+  |                                                               |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
+\newpage
+\subsection{Absolute Slot Number (ASN)}
+
+For a Time-Slotted Channel Hopping MAC, the Absolute Slot Number (ASN)
+is a monotonically increasing number which is synchronized across all nodes on
+the network and forms part of the nonce for decryption.
+
+\begin{Verbatim}[samepage=true]
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |        Type = ASN (7)         |          datalen = 8          |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                                                               |
+  |                          ASN (64-bits)                        |
+  |                                                               |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
+\subsection{Start of Slot Timestamp}
+
+The start of slot timestamp is a monotonically increasing time in nanoseconds
+since power on of the receiving device.  For a Time-Slotted Channel Hopping
+MAC, the start of slot timestamp, which preceeds the start of frame timestamp,
+is essential for debugging and optimizing TSCH configurations.
+
+\begin{Verbatim}[samepage=true]
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |   Type = SLOT_TIMESTAMP (8)   |          datalen = 8          |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                                                               |
+  |                          nanoseconds                          |
+  |                                                               |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
+\subsection{Timeslot Length}
+
+The timeslot length in a Time-Slotted Channel Hopping MAC is used for
+calculating the delta between end of frame and end of slot.
+
+\begin{Verbatim}[samepage=true]
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   Type = TIMESLOT_LENGTH (9)  |          datalen = 8          |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                 Length of timeslot in microseconds            |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
+
+\newpage
+\section{Glossary}\label{sec:glos}
+\begin{center}
+\begin{tabular}{ |p{3cm}|p{10cm}| }
+\hline
+\textbf{Notation}   &  \textbf{Description}\\
+\hline
+DLT                 &  Data-Link Type\\
+\hline
+EPB                 &  Enhance Packet Block (pcap-ng)\\
+\hline
+FCS                 &  Frame Check Sequence\\
+\hline
+IDB                 &  Interface Description Block (pcap-ng)\\
+\hline
+IEEE                &  Institute of Electrical and Electronics Engineers\\
+\hline
+LR-WPAN             &  Low-Rate Wireless Personal Area Network\\
+\hline
+MAC                 &  Medium Access Control\\
+\hline
+pcap                &  Packet Capture File Format [\ref{itm:libpcap}]\\
+\hline
+pcap-ng             &  PCAP Next Generation Capture File Format [\ref{itm:pcapng}]\\
+\hline
+PDU                 &  Protocol Data Unit\\
+\hline
+PHY                 &  Physical Layer\\
+\hline
+SUN                 &  Smart Utility Networks\\
+\hline
+TLV                 &  Type-Length-Value\\
+\hline
+TSCH                &  Time-Slotted Channel Hopping\\
+\hline
+TVWS                &  Television White Space\\
+\hline
+\end{tabular}
+\end{center}
+
+\section{References}\label{sec:references}
+    \begin{enumerate}
+        \item Data-Link Types - \url{https://www.tcpdump.org/linktypes.html}\label{itm:linktypes}
+        \item Packet Capture File Format - \url{https://wiki.wireshark.org/Development/LibpcapFileFormat}\label{itm:libpcap}
+        \item PCAP Next Generation Capture File Format - \url{https://pcapng.github.io/pcapng/}\label{itm:pcapng}
+    \end{enumerate}
+\end{document}
