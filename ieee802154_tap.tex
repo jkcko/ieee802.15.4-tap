@@ -4,7 +4,7 @@ IEEE 802.15.4 TAP Link Type Specification
 }
 \newcommand\authorname{James Ko}
 \newcommand\company[1][]{\textit{Exegin Technologies Limited}~}
-\newcommand\versionnumber{1}
+\newcommand\versionnumber{1.0}
 \title{
 \maintitle
 \\\company
@@ -94,7 +94,7 @@ IEEE 802.15.4 TAP Link Type Specification
     \vspace{2cm}
     {\scshape\LARGE Exegin Technologies Limited \par}
     \vspace{5cm}
-    {\scshape\Large IEEE 802.15.4 Information Link Type Specification\par}
+    {\scshape\Large IEEE 802.15.4 TAP Link Type Specification\par}
     {\itshape Version \versionnumber}
     \vspace{2cm}
     \vfill
@@ -105,7 +105,9 @@ IEEE 802.15.4 TAP Link Type Specification
 \hline
 \textbf{Revision}   &  \textbf{Description}\\
 \hline
-    2019-01-29 & Version 1 - Initial Release\\
+    2019-01-29 & Version 1.0 - Initial Release\\
+\hline
+    2019-02-21 & Fix title, introduction, and TLV labels.\\
 \hline
 \end{tabular}
 
@@ -120,15 +122,17 @@ IEEE 802.15.4 TAP Link Type Specification
 
 \newpage
 \section{Introduction}\label{sec:intro}
-IEEE 802.15.4 is a wireless standard for Low-Rate Wireless Personal Area
-Networks (LR-WPANs) defining a number of physical (PHY) layers covering a wide
-variety of freqency bands and a number of Media Access Control (MAC) sub-layers
-for managing data and management services including beacon management, channel
-access, frame delivery and validation, and security mechanisms.  Developing,
-debugging, diagnosing, and maintaining technologies using IEEE 802.15.4
-require capturing packets with a sniffer. Sniffers generally output captured packets
-encapsulated in a pcap or pcap-ng packet with a specific data link-type (DLT)
-[\ref{itm:linktypes}] that is understood by packet analyzers.
+IEEE 802.15.4 is an IEEE standard for Low-Rate Wireless Networks, including
+Low-Rate Wireless Personal Area Networks (LR-WPANs) and Low-Power Wide Area
+Networks (LPWAN), defining a number of physical (PHY) layers covering a wide
+variety of freqency bands and a number of Media Access Control (MAC)
+sub-layers for managing data and management services including beacon
+management, channel access, frame delivery and validation, and security
+mechanisms.  Developing, debugging, diagnosing, and maintaining technologies
+using IEEE 802.15.4 require capturing packets with a sniffer. Sniffers
+generally output captured packets encapsulated in a pcap or pcap-ng packet
+with a specific data link-type (DLT) [\ref{itm:linktypes}] that is understood
+by packet analyzers.
 
 Three existing DLTs for IEEE 802.15.4 are defined
 
@@ -149,8 +153,8 @@ X3.66-1979 for SUN PHYs or TVWS PHYs.  The global protocol configuration does
 not support configurations with multiple sniffer interfaces each with a
 different FCS type, 
 
-This document proposes and defines a new DLT and format for presenting captured
-IEEE 802.15.4 packets with meta-data to packet analyzers.
+This document proposes and defines a new DLT and format for presenting
+captured IEEE 802.15.4 packets with meta-data to packet analyzers.
 
 \newpage
 \section{Overview}\label{sec:ovrvw}
@@ -290,7 +294,7 @@ optional if no FCS is present.
    0                   1                   2                   3
    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |      Type = FCS_TYPE (0)      |           datalen = 1         |
+  |      Type = FCS_TYPE (0)      |           length = 1          |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |     Type      |             padding                           |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -311,7 +315,7 @@ The received signal strength in dBm as a IEEE-754 floating point number.
    0                   1                   2                   3
    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |         Type = RSS (1)        |           datalen = 4         |
+  |         Type = RSS (1)        |           length = 4          |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                          RSS in dBm                           |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -327,7 +331,7 @@ multi-rate PHY configurations.
    0                   1                   2                   3
    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |      Type = BIT_RATE (2)      |           datalen = 4         |
+  |      Type = BIT_RATE (2)      |           length = 4          |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                        Bit rate in bps                        |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -341,7 +345,7 @@ channel pages.  See IEEE 802.15.4-2015 10.1.2 Channel assignments.
    0                   1                   2                   3
    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  | Type = CHANNEL_ASSIGNMENT (3) |           datalen = 3         |
+  | Type = CHANNEL_ASSIGNMENT (3) |           length = 3          |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |        Channel number         | Channel page  |    padding    |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -356,7 +360,7 @@ band, encoding type, and rate mode.
    0                   1                   2                   3
    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |   Type = PHY_ENCODING (4)     |         datalen = 3           |
+  | Type = SUN_PHY_INFORMATION (4)|         length = 3            |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |     Band      |     Type      |     Mode      |   padding     |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -380,7 +384,7 @@ sniffer.
    0                   1                   2                   3
    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |   Type = SOF_TIMESTAMP (5)    |          datalen = 8          |
+  |   Type = SOF_TIMESTAMP (5)    |          length = 8           |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                                                               |
   |                          nanoseconds                          |
@@ -399,7 +403,7 @@ timing constraints on the ack sent in response to a data frame.
    0                   1                   2                   3
    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |   Type = EOF_TIMESTAMP (6)    |          datalen = 8          |
+  |   Type = EOF_TIMESTAMP (6)    |          length = 8           |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                                                               |
   |                          nanoseconds                          |
@@ -418,7 +422,7 @@ the network and forms part of the nonce for decryption.
    0                   1                   2                   3
    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |        Type = ASN (7)         |          datalen = 8          |
+  |        Type = ASN (7)         |          length = 8           |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                                                               |
   |                          ASN (64-bits)                        |
@@ -437,7 +441,7 @@ is essential for debugging and optimizing TSCH configurations.
    0                   1                   2                   3
    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |   Type = SLOT_TIMESTAMP (8)   |          datalen = 8          |
+  |   Type = SLOT_TIMESTAMP (8)   |          length = 8           |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                                                               |
   |                          nanoseconds                          |
@@ -454,7 +458,7 @@ calculating the delta between end of frame and end of slot.
     0                   1                   2                   3
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |   Type = TIMESLOT_LENGTH (9)  |          datalen = 8          |
+   |   Type = TIMESLOT_LENGTH (9)  |          length = 8           |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |                 Length of timeslot in microseconds            |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -468,6 +472,8 @@ calculating the delta between end of frame and end of slot.
 \hline
 \textbf{Notation}   &  \textbf{Description}\\
 \hline
+CRC                 &  Cyclic Redundancy Check\\
+\hline
 DLT                 &  Data-Link Type\\
 \hline
 EPB                 &  Enhance Packet Block (pcap-ng)\\
@@ -480,6 +486,8 @@ IEEE                &  Institute of Electrical and Electronics Engineers\\
 \hline
 LR-WPAN             &  Low-Rate Wireless Personal Area Network\\
 \hline
+LPWAN               &  Low-Power Wide Area Network\\
+\hline
 MAC                 &  Medium Access Control\\
 \hline
 pcap                &  Packet Capture File Format [\ref{itm:libpcap}]\\
@@ -490,7 +498,7 @@ PDU                 &  Protocol Data Unit\\
 \hline
 PHY                 &  Physical Layer\\
 \hline
-SUN                 &  Smart Utility Networks\\
+SUN                 &  Smart Utility Network\\
 \hline
 TLV                 &  Type-Length-Value\\
 \hline
