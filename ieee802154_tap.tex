@@ -107,7 +107,8 @@ IEEE 802.15.4 TAP Link Type Specification
 \hline
     2019-01-29 & Version 1.0 - Initial Release\\
 \hline
-    2019-02-21 & Fix title, introduction, and TLV labels.\\
+    2019-02-21 & Fix title. Revised introduction. Fix TLV labels.
+    Removed TI CC24xx FCS Type. Removed pcap-ng examples.\\
 \hline
 \end{tabular}
 
@@ -166,68 +167,13 @@ the meta-data information in both pcap and pcap-ng capture streams.  Where
 types are duplicated by TLVs and pcap-ng options in the same packet,
 the DLT TLVs have priority.
 
-\subsection{PCAPNG Block Types}
-Although DLTs are common to pcap and pcap-ng, this document will provide
-examples using pcap-ng only.
-
-\subsubsection{PCAPNG IDB}
-
-The DLT value is specified in the pcap header or pcap-ng interface description
-block (IDB) before the the first packet.
-
-\begin{Verbatim}[samepage=true]
-   0                   1                   2                   3
-   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                Block Type = 0x00000001                        |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                   Block Total Length                          |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |  DLT_IEEE802_15_4_TAP (283)   |        reserved               |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                          SnapLen                              |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                      Options (variable)                       |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                      Block Total Length                       |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-\end{Verbatim}
-
-\newpage
-\subsubsection{PCAPNG EPB}
+The DLT_IEEE802_15_4_TAP (283) value is specified in the pcap header or pcap-ng
+interface description block (IDB) before the the first packet.
 
 An IEEE 802.15.4 TAP packet is encapsulated in the packet data following a
 pcap record header or in the packet data of a pcap-ng Enhanced Packet Block
 (EPB).
 
-\begin{Verbatim}[samepage=true]
-   0                   1                   2                   3
-   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                   Block Type = 0x00000006                     |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                      Block Total Length                       |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                         Interface_ID                          |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                      Timestamp (High)                         |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                       Timestamp (Low)                         |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                    Captured Packet Length                     |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                    Original Packet Length                     |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                    IEEE 802.15.4 TAP Packet                   |
-  |                variable length, padded to 32 bits             |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                       Options (variable)                      |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                      Block Total Length                       |
-  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-\end{Verbatim}
-
-\newpage
 \subsection{IEEE 802.15.4 TAP Packet}
 
 The IEEE 802.15.4 TAP Packet consists of the TAP Header, zero or more TLV
@@ -305,7 +251,6 @@ The FCS type is one of
         \item 0 = None,
         \item 1 = 16-bit CRC,
         \item 2 = 32-bit CRC,
-        \item 3 = TI CC24xx CRC_OK bit.
     \end{itemize}
 
 \subsection{Receive Signal Strength}
