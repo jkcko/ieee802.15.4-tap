@@ -101,14 +101,16 @@ IEEE 802.15.4 TAP Link Type Specification
 
     \vfill
 
-\begin{tabular}{ |p{3cm}|p{12cm}| }
+    \begin{tabular}{|p{2cm}|p{11.5cm}| p{3cm}|}
 \hline
-\textbf{Revision}   &  \textbf{Description}\\
+    \textbf{Revision} & \textbf{Description} & \textbf{Author}\\
 \hline
-    2019-01-29 & Version 1.0 - Initial Release\\
+    2019-01-29 & Version 1.0 - Initial Release & James Ko\\
 \hline
     2019-02-21 & Fix title. Revised introduction. Fix TLV labels.
-    Removed TI CC24xx FCS Type. Removed pcap-ng examples.\\
+    Removed TI CC24xx FCS Type. Removed pcapng examples. & James Ko\\
+\hline
+    2019-02-22 & Added LQI. Clarify length fields. & James Ko\\
 \hline
 \end{tabular}
 
@@ -131,7 +133,7 @@ sub-layers for managing data and management services including beacon
 management, channel access, frame delivery and validation, and security
 mechanisms.  Developing, debugging, diagnosing, and maintaining technologies
 using IEEE 802.15.4 require capturing packets with a sniffer. Sniffers
-generally output captured packets encapsulated in a pcap or pcap-ng packet
+generally output captured packets encapsulated in a pcap or pcapng packet
 with a specific data link-type (DLT) [\ref{itm:linktypes}] that is understood
 by packet analyzers.
 
@@ -143,35 +145,34 @@ Three existing DLTs for IEEE 802.15.4 are defined
     \item DLT_IEEE802_15_4_NOFCS (230).
 \end{itemize}
 
-None of the current DLTs provide a means to include out-of-band
-meta-data such as received signal strength and channel number which are useful
-for diagnostics in any wireless transmission system.  Also, the current
-implementation with FCS only supports a 16-bit ITU-T CRC or CRC OK bit in the
-status bytes provided by TI CC24xx radios, and the FCS type must be selected
-by the user in the global protocol capture preferences.  The IEEE
-802.15.4-2015 standard also specifies a 32-bit CRC equivalent to ANSI
-X3.66-1979 for SUN PHYs or TVWS PHYs.  The global protocol configuration does
-not support configurations with multiple sniffer interfaces each with a
-different FCS type, 
+None of the current DLTs provide a means to include out-of-band meta-data such
+as received signal strength and channel number which are useful for
+diagnostics in any wireless transmission system.  Also, analyzers supporting
+DLT_IEEE802_15_4_WITHFCS currently assume a 16-bit FCS following the PHY
+payload.  The IEEE 802.15.4-2015 standard also specifies a 32-bit CRC
+equivalent to ANSI X3.66-1979 for SUN PHYs or TVWS PHYs.
 
-This document proposes and defines a new DLT and format for presenting
-captured IEEE 802.15.4 packets with meta-data to packet analyzers.
+This document defines a new DLT and format for presenting captured IEEE
+802.15.4 packets with meta-data to packet analyzers.
+
+The latest version of this specification is at
+\url{https://github.com/jkcko/ieee802.15.4-tap}.
 
 \newpage
 \section{Overview}\label{sec:ovrvw}
 The IEEE 802.15.4 TAP DLT design is based on an extensible Type-Length-Value
 (TLV) format.  The optional meta-data information in encapsulated in one or
 more TLVs and included in any packet from a sniffer.  Some types may be
-duplicated by pcap-ng options but using the TLVs in this DLT enables providing
-the meta-data information in both pcap and pcap-ng capture streams.  Where
-types are duplicated by TLVs and pcap-ng options in the same packet,
+duplicated by pcapng options but using the TLVs in this DLT enables providing
+the meta-data information in both pcap and pcapng capture streams.  Where
+types are duplicated by TLVs and pcapng options in the same packet,
 the DLT TLVs have priority.
 
-The DLT_IEEE802_15_4_TAP (283) value is specified in the pcap header or pcap-ng
-interface description block (IDB) before the the first packet.
+The DLT_IEEE802_15_4_TAP (283) value is specified in the pcap header or pcapng
+interface description block (IDB) LinkType field before the the first packet.
 
 An IEEE 802.15.4 TAP packet is encapsulated in the packet data following a
-pcap record header or in the packet data of a pcap-ng Enhanced Packet Block
+pcap record header or in the packet data of a pcapng Enhanced Packet Block
 (EPB).
 
 \subsection{IEEE 802.15.4 TAP Packet}
@@ -200,10 +201,11 @@ encoded in little-endian byte order.
 
 \begin{itemize}
     \item version - 0
-    \item padding
-    \item length - total length of header and TLVs in bytes
+    \item length - total length of header and TLVs in octets
 \end{itemize}
+Length is a minimum of 4 octets and must be a multiple of 4.
 
+\newpage
 \subsubsection{IEEE 802.15.4 TAP TLVs}
 
 IEEE 802.15.4 TAP TLVs have the following format.
@@ -215,15 +217,17 @@ IEEE 802.15.4 TAP TLVs have the following format.
   |             type              |             length            |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                             value                             :
-  :                variable length, padded to 32 bits             |
+  :                variable length, padded to 32-bits             |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 \end{Verbatim}
 
 \begin{itemize}
-    \item type        - field type identifier
-    \item length      - bytes in value field
+    \item type        - type identifier
+    \item length      - number of octets for type in value field
+                        (not including padding)
     \item value       - data for type
 \end{itemize}
+Types which represent a boolean flag may have a length of zero.
 
 \newpage
 \section{IEEE 802.15.4 TAP TLV Types}
@@ -242,7 +246,7 @@ optional if no FCS is present.
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |      Type = FCS_TYPE (0)      |           length = 1          |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |     Type      |             padding                           |
+  |   FCS type    |             padding                           |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 \end{Verbatim}
 
@@ -250,7 +254,7 @@ The FCS type is one of
     \begin{itemize}
         \item 0 = None,
         \item 1 = 16-bit CRC,
-        \item 2 = 32-bit CRC,
+        \item 2 = 32-bit CRC.
     \end{itemize}
 
 \subsection{Receive Signal Strength}
@@ -322,7 +326,7 @@ band, encoding type, and rate mode.
 
 The start of frame timestamp is a monotonically increasing time in nanoseconds
 since power on of the receiving device.  This value differs from the timestamp
-in the pcap or pcap-ng header which is based on the clock time reported by the
+in the pcap or pcapng header which is based on the clock time reported by the
 sniffer.
 
 \begin{Verbatim}[samepage=true]
@@ -409,6 +413,22 @@ calculating the delta between end of frame and end of slot.
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 \end{Verbatim}
 
+\subsection{Link Quality Indicator}
+
+The Link Quality Indicator (LQI) measurement is a characterization of the
+strength and/or quality of the received packet.  See IEEE 802.15.4-2015 10.2.6
+Link quality indicator.
+
+\begin{Verbatim}[samepage=true]
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        Type = LQI (10)        |          length = 1           |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |      LQI      |                 padding                       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
 
 \newpage
 \section{Glossary}\label{sec:glos}
@@ -421,11 +441,11 @@ CRC                 &  Cyclic Redundancy Check\\
 \hline
 DLT                 &  Data-Link Type\\
 \hline
-EPB                 &  Enhance Packet Block (pcap-ng)\\
+EPB                 &  Enhance Packet Block (pcapng)\\
 \hline
 FCS                 &  Frame Check Sequence\\
 \hline
-IDB                 &  Interface Description Block (pcap-ng)\\
+IDB                 &  Interface Description Block (pcapng)\\
 \hline
 IEEE                &  Institute of Electrical and Electronics Engineers\\
 \hline
@@ -433,11 +453,13 @@ LR-WPAN             &  Low-Rate Wireless Personal Area Network\\
 \hline
 LPWAN               &  Low-Power Wide Area Network\\
 \hline
+LQI                 &  Link Quality Indicator\\
+\hline
 MAC                 &  Medium Access Control\\
 \hline
 pcap                &  Packet Capture File Format [\ref{itm:libpcap}]\\
 \hline
-pcap-ng             &  PCAP Next Generation Capture File Format [\ref{itm:pcapng}]\\
+pcapng              &  PCAP Next Generation Capture File Format [\ref{itm:pcapng}]\\
 \hline
 PDU                 &  Protocol Data Unit\\
 \hline
@@ -457,7 +479,17 @@ TVWS                &  Television White Space\\
 \section{References}\label{sec:references}
     \begin{enumerate}
         \item Data-Link Types - \url{https://www.tcpdump.org/linktypes.html}\label{itm:linktypes}
-        \item Packet Capture File Format - \url{https://wiki.wireshark.org/Development/LibpcapFileFormat}\label{itm:libpcap}
-        \item PCAP Next Generation Capture File Format - \url{https://pcapng.github.io/pcapng/}\label{itm:pcapng}
+        \item Packet Capture File Format - \url{https://www.tcpdump.org/manpages/pcap-savefile.5.html}\label{itm:libpcap}
+        \item PCAP Next Generation Capture File Format - \url{https://github.com/pcapng/pcapng}\label{itm:pcapng}
     \end{enumerate}
+
+\section{Contributers}\label{sec:references}
+The following have contributed to this spec as authors or reviewers.\\
+\tt{
+Dario Tedeschi <dat[at]exegin.com>\\
+Guy Harris <guy[at]alum.mit.edu>\\
+James Ko <jck[at]exegin.com>\\
+Jeremie Faucher-Goulet <Jeremie.Faucher-Goulet[at]trilliant.com>\\
+Sandra Jessen <sdj[at]exegin.com>\\
+}
 \end{document}
