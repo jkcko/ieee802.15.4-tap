@@ -112,6 +112,9 @@ IEEE 802.15.4 TAP Link Type Specification
 \hline
     2019-02-22 & Added LQI. Clarify length fields. & James Ko\\
 \hline
+    2019-02-27 & Added rules for constructing TLVs with bit flags, and padding
+        with zeros.  & James Ko\\
+\hline
 \end{tabular}
 
     % Bottom of the page
@@ -187,7 +190,7 @@ encoded in little-endian byte order.
    0                   1                   2                   3
    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |    version    |    padding    |            length             |
+  |    version    |  reserved (0) |            length             |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                            TAP TLVs                           :
   :                        variable length                        |
@@ -200,10 +203,12 @@ encoded in little-endian byte order.
 \end{Verbatim}
 
 \begin{itemize}
-    \item version - 0
+    \item version - currently only version 0 defined
+    \item reserved - must be set to 0
     \item length - total length of header and TLVs in octets
 \end{itemize}
-Length is a minimum of 4 octets and must be a multiple of 4.
+Length is a minimum of 4 octets and must be a multiple of 4.  Addition of new
+TLVs does not and must not require incrementing the version number.
 
 \newpage
 \subsubsection{IEEE 802.15.4 TAP TLVs}
@@ -217,7 +222,7 @@ IEEE 802.15.4 TAP TLVs have the following format.
   |             type              |             length            |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                             value                             :
-  :                variable length, padded to 32-bits             |
+  :           variable length, zero padded to 32-bits             |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 \end{Verbatim}
 
@@ -227,13 +232,21 @@ IEEE 802.15.4 TAP TLVs have the following format.
                         (not including padding)
     \item value       - data for type
 \end{itemize}
-Types which represent a boolean flag may have a length of zero.
+All padding bits must be set to zero.  A TLV with zero (0) length is valid with
+no padding bits.  Any TLV which defines a set of flags with as bits must also
+include a mask of known flags which are being provided by the flag bits.  A
+flags TLV must be defined to have a variable length in multiples of 4-octets
+where the first half of the octets (i.e. 2 of 4 octets) are the mask and the
+second half are the flags.  Mask and flags must be encoded in little-endian
+byte order and bit 0 is the least significant bit.
 
 \newpage
 \section{IEEE 802.15.4 TAP TLV Types}
 
-The following subsections describe the currently defined TLVs.  Any unknown
-TLVs should be dissected as a binary blob of the provided length.
+The following subsections describe the currently defined TLVs.  Developers must
+request a new TLV if the meta-data to include does not match the type of the
+defined TLVs.  Any unknown TLVs will be dissected as a binary blob of the
+provided length.  
 
 \subsection{FCS Type}
 
@@ -246,7 +259,7 @@ optional if no FCS is present.
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |      Type = FCS_TYPE (0)      |           length = 1          |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |   FCS type    |             padding                           |
+  |   FCS type    |             padding (0)                       |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 \end{Verbatim}
 
@@ -269,6 +282,7 @@ The received signal strength in dBm as a IEEE-754 floating point number.
   |                          RSS in dBm                           |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 \end{Verbatim}
+Note: RSSI in dB must use a different TLV (TBD).
 
 \newpage
 \subsection{Bit Rate}
@@ -296,7 +310,7 @@ channel pages.  See IEEE 802.15.4-2015 10.1.2 Channel assignments.
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   | Type = CHANNEL_ASSIGNMENT (3) |           length = 3          |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |        Channel number         | Channel page  |    padding    |
+  |        Channel number         | Channel page  |  padding (0)  |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 \end{Verbatim}
 
@@ -311,7 +325,7 @@ band, encoding type, and rate mode.
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   | Type = SUN_PHY_INFORMATION (4)|         length = 3            |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |     Band      |     Type      |     Mode      |   padding     |
+  |     Band      |     Type      |     Mode      |  padding (0)  |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 \end{Verbatim}
 
@@ -425,7 +439,7 @@ Link quality indicator.
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |        Type = LQI (10)        |          length = 1           |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |      LQI      |                 padding                       |
+   |      LQI      |                 padding (0)                   |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 \end{Verbatim}
 
