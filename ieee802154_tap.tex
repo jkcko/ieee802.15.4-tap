@@ -4,7 +4,7 @@ IEEE 802.15.4 TAP Link Type Specification
 }
 \newcommand\authorname{James Ko}
 \newcommand\company[1][]{\textit{Exegin Technologies Limited}~}
-\newcommand\versionnumber{1.0}
+\newcommand\versionnumber{1.1}
 \title{
 \maintitle
 \\\company
@@ -115,6 +115,8 @@ IEEE 802.15.4 TAP Link Type Specification
     2019-02-27 & Added rules for constructing TLVs with bit flags, and padding
         with zeros.  & James Ko\\
 \hline
+    2019-03-13 & Version 1.1 Added TLVs for channel center frequency and
+        channel plan & James Ko\\ \hline
 \end{tabular}
 
     % Bottom of the page
@@ -443,6 +445,45 @@ Link quality indicator.
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 \end{Verbatim}
 
+\subsection{Channel Center Frequency}
+
+A sniffer may provide the channel center frequency of the receiver
+as an IEEE-754 floating point number in kHz.
+
+\begin{Verbatim}[samepage=true]
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Type = CHANNEL_FREQUENCY (11) |          length = 4           |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                Channel Center Frequency in kHz                |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
+\newpage
+\subsection{Channel Plan}
+ 
+A channel plan defines the channel 0 center frequency, channel spacing and
+number of channels.  The center frequency of channel N in the channel plan is
+given by the following formula.
+
+\[ ChanCenterFreqN = ChanCenterFreq0 + (N \times ChanSpacing) \]
+ 
+Frequency values are in kHz and encoded as an IEEE-754 floating point number.
+ 
+\begin{Verbatim}[samepage=true]
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  Type = CHANNEL_PLAN (12)   |          length = 10            |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                Channel 0 Center Frequency in kHz              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                     Channel Spacing in kHz                    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |      Number of Channels       |          padding (0)          |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
 
 \newpage
 \section{Glossary}\label{sec:glos}
