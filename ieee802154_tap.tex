@@ -4,16 +4,13 @@ IEEE 802.15.4 TAP Link Type Specification
 }
 \newcommand\authorname{James Ko}
 \newcommand\company[1][]{\textit{Exegin Technologies Limited}~}
-\newcommand\versionnumber{1.1}
+\newcommand\versionnumber{1.2}
 \title{
 \maintitle
 \\\company
 \\\hfill\\\normalsize Version \versionnumber
 }
 \author{\authorname~\tt{<jck@exegin.com>}}
-
-% We use literal underscores a lot -- disable it as the subscript indicator.
-\catcode`\_=\active
 
 % Comment out the line below when out of draft
 \usepackage{draftwatermark}\SetWatermarkScale{3}
@@ -41,6 +38,9 @@ IEEE 802.15.4 TAP Link Type Specification
 \newcommand{\colorbitbox}[3]{%
     \rlap{\bitbox{#2}{\color{#1}\rule{\width}{\height}}}%
     \bitbox{#2}{#3}}
+
+% We use literal underscores a lot -- disable it as the subscript indicator.
+\catcode`\_=\active
 
 \pagestyle{fancy}
 \fancyhead{}
@@ -117,6 +117,9 @@ IEEE 802.15.4 TAP Link Type Specification
 \hline
     2019-03-13 & Version 1.1 Added TLVs for channel center frequency and
         channel plan & James Ko\\ \hline
+\hline
+    2020-10-17 & Version 1.2 Added TLVs for PHY Header (PHR) & James Ko\\
+\hline
 \end{tabular}
 
     % Bottom of the page
@@ -235,7 +238,7 @@ IEEE 802.15.4 TAP TLVs have the following format.
     \item value       - data for type
 \end{itemize}
 All padding bits must be set to zero.  A TLV with zero (0) length is valid with
-no padding bits.  Any TLV which defines a set of flags with as bits must also
+no padding bits.  Any TLV which defines a set of flags as bits must also
 include a mask of known flags which are being provided by the flag bits.  A
 flags TLV must be defined to have a variable length in multiples of 4-octets
 where the first half of the octets (i.e. 2 of 4 octets) are the mask and the
@@ -485,6 +488,54 @@ Frequency values are in kHz and encoded as an IEEE-754 floating point number.
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 \end{Verbatim}
 
+\subsection{PHY Header}
+
+The PHY Header (PHR) preceeds the payload (PSDU) in an IEEE PHY Protocol Data
+Unit (PPDU).  The sniffer may provide the PHR for a frame if available.
+The length of this TLV depends on the PHY Type and PHR format.
+
+The PHR Type and PHR length provide information to the dissector on how to
+decode the PHR bits.  The data bits of the PHR Header must be encoded in
+little-endian order with multi-bit fields ordered from MSB to LSB.
+
+Valid PHR Types are enumerated in the following table:
+
+\begin{tabular}{c | l | l}
+    \textbf{Value}  & \textbf{PHR Type} & \textbf{PHR length in bits}\\
+\hline
+    0  & RAW                    & Up to $8\cdot n$\\
+    1  & O-QPSK                 & 8 \\
+    2  & CSS                    & 12 \\
+    3  & HRP UWB                & 19 \\
+    4  & MSK                    & 8 or 16 for Extended PHR \\
+    5  & LRP UWB                & 22 \\
+    6  & SUN FSK                & 16 \\
+    7  & SUN OFDM               & 36 \\
+    8  & SUN O-QPSK             & 24 \\
+    9  & LECIM FSK              & 16 \\
+    10 & TVWS-FSK               & 16 \\
+    11 & TVWS-OFDM              & 44 (excluding Tail) or 50 (including Tail) \\
+    12 & TVWS-NB-OFDM           & 38 (excluding Tail) or 44 (including Tail) \\
+    13 & RCC LMR                & 23 (excluding FEC Tail) or 27 (including Tail) \\
+    14 & CMB O-QPSK             & 24 \\
+    15 & CMB GFSK               & 16 \\
+    16 & TASK                   & 16 \\
+    17 & RS-GFSK                & 16 (Long) or 8 (Short) \\
+    18 & Wi-SUN FSK Mode Switch & 16 \\
+\end{tabular}
+
+\begin{Verbatim}[samepage=true]
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |    Type = PHY_HEADER (13)     |        length = 4 + n         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |           PHR Type            |       PHR length in bits      |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                      PHY Header Data                          |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+\end{Verbatim}
+
 \newpage
 \section{Glossary}\label{sec:glos}
 \begin{center}
@@ -508,15 +559,21 @@ LR-WPAN             &  Low-Rate Wireless Personal Area Network\\
 \hline
 LPWAN               &  Low-Power Wide Area Network\\
 \hline
+LSB                 &  Least Significant Bit\\
+\hline
 LQI                 &  Link Quality Indicator\\
 \hline
 MAC                 &  Medium Access Control\\
+\hline
+MSB                 &  Most Significant Bit\\
 \hline
 pcap                &  Packet Capture File Format [\ref{itm:libpcap}]\\
 \hline
 pcapng              &  PCAP Next Generation Capture File Format [\ref{itm:pcapng}]\\
 \hline
 PDU                 &  Protocol Data Unit\\
+\hline
+PHR                 &  PHY Header\\
 \hline
 PHY                 &  Physical Layer\\
 \hline
