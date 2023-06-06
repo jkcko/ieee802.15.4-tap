@@ -4,7 +4,7 @@ IEEE 802.15.4 TAP Link Type Specification
 }
 \newcommand\authorname{James Ko}
 \newcommand\company[1][]{\textit{Exegin Technologies Limited}~}
-\newcommand\versionnumber{1.2}
+\newcommand\versionnumber{1.3}
 \title{
 \maintitle
 \\\company
@@ -27,6 +27,9 @@ IEEE 802.15.4 TAP Link Type Specification
 \usepackage{graphicx}
 \usepackage{titlesec}
 \usepackage{wrapfig}
+\usepackage{utfsym}
+
+\newcommand\checkmark{\usym{1F5F8}}
 
 %
 % Bytefield and color customizations
@@ -119,6 +122,8 @@ IEEE 802.15.4 TAP Link Type Specification
         channel plan & James Ko\\ \hline
 \hline
     2020-10-17 & Version 1.2 Added TLVs for PHY Header (PHR) & James Ko\\
+\hline
+    2023-06-06 & Version 1.3 Clarify bit order of PHR Types & James Ko\\
 \hline
 \end{tabular}
 
@@ -495,13 +500,15 @@ Unit (PPDU).  The sniffer may provide the PHR for a frame if available.
 The length of this TLV depends on the PHY Type and PHR format.
 
 The PHR Type and PHR length provide information to the dissector on how to
-decode the PHR bits.  The data bits of the PHR Header must be encoded in
-little-endian order with multi-bit fields ordered from MSB to LSB.
+decode the PHR bits.  The bits in memory must be encoded according to the bit
+positions specified for that PHR type in the IEEE 802.15.4 PHR Format unless
+indicated below.  In general, the bits are swapped if the PHR's Frame Length
+field or multi-bit fields are specified as being processed MSB first.
 
 Valid PHR Types are enumerated in the following table:
 
-\begin{tabular}{c | l | l}
-    \textbf{Value}  & \textbf{PHR Type} & \textbf{PHR length in bits}\\
+\begin{tabular}{c | l | l | c}
+    \textbf{Value}  & \textbf{PHR Type} & \textbf{PHR length in bits} & \textbf{Swapped}\\
 \hline
     0  & RAW                    & Up to $8\cdot n$\\
     1  & O-QPSK                 & 8 \\
@@ -509,19 +516,19 @@ Valid PHR Types are enumerated in the following table:
     3  & HRP UWB                & 19 \\
     4  & MSK                    & 8 or 16 for Extended PHR \\
     5  & LRP UWB                & 22 \\
-    6  & SUN FSK                & 16 \\
-    7  & SUN OFDM               & 36 \\
+    6  & SUN FSK                & 16 & \checkmark \\
+    7  & SUN OFDM               & 30 (excl. Tail) or 36 (incl. Tail) & \checkmark \\
     8  & SUN O-QPSK             & 24 \\
-    9  & LECIM FSK              & 16 \\
-    10 & TVWS-FSK               & 16 \\
-    11 & TVWS-OFDM              & 44 (excluding Tail) or 50 (including Tail) \\
-    12 & TVWS-NB-OFDM           & 38 (excluding Tail) or 44 (including Tail) \\
-    13 & RCC LMR                & 23 (excluding FEC Tail) or 27 (including Tail) \\
-    14 & CMB O-QPSK             & 24 \\
-    15 & CMB GFSK               & 16 \\
+    9  & LECIM FSK              & 16 & \checkmark \\
+    10 & TVWS-FSK               & 16 & \checkmark \\
+    11 & TVWS-OFDM              & 44 (excl. Tail) or 50 (incl. Tail) & \checkmark \\
+    12 & TVWS-NB-OFDM           & 38 (excl. Tail) or 44 (incl. Tail) & \checkmark \\
+    13 & RCC LMR                & 23 (excl. FEC Tail) or 27 (incl. Tail) & \checkmark \\
+    14 & CMB O-QPSK             & 24 & \checkmark \\
+    15 & CMB GFSK               & 16 & \checkmark \\
     16 & TASK                   & 16 \\
-    17 & RS-GFSK                & 16 (Long) or 8 (Short) \\
-    18 & Wi-SUN FSK Mode Switch & 16 \\
+    17 & RS-GFSK                & 16 (Long) or 8 (Short) & \checkmark \\
+    18 & Wi-SUN FSK Mode Switch & 16 & \checkmark \\
 \end{tabular}
 
 \begin{Verbatim}[samepage=true]
